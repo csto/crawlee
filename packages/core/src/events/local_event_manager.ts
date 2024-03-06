@@ -1,11 +1,12 @@
-import os from 'node:os';
+// import os from 'node:os';
+import os from 'os-utils'
 
-import log from '@apify/log';
-import { betterClearInterval, betterSetInterval } from '@apify/utilities';
-import { getMemoryInfo } from '@crawlee/utils';
+import log from '@apify/log'
+import { betterClearInterval, betterSetInterval } from '@apify/utilities'
+import { getMemoryInfo } from '@crawlee/utils'
 
-import { EventManager, EventType } from './event_manager';
-import type { SystemInfo } from '../autoscaling';
+import type { SystemInfo } from '../autoscaling'
+import { EventManager, EventType } from './event_manager'
 
 export class LocalEventManager extends EventManager {
     private previousTicks = { idle: 0, total: 0 };
@@ -49,16 +50,16 @@ export class LocalEventManager extends EventManager {
         intervalCallback();
     }
 
-    private getCurrentCpuTicks() {
-        const cpus = os.cpus();
-        return cpus.reduce((acc, cpu) => {
-            const cpuTimes = Object.values(cpu.times);
-            return {
-                idle: acc.idle + cpu.times.idle,
-                total: acc.total + cpuTimes.reduce((sum, num) => sum + num),
-            };
-        }, { idle: 0, total: 0 });
-    }
+    // private getCurrentCpuTicks() {
+    //     const cpus = os.cpus();
+    //     return cpus.reduce((acc, cpu) => {
+    //         const cpuTimes = Object.values(cpu.times);
+    //         return {
+    //             idle: acc.idle + cpu.times.idle,
+    //             total: acc.total + cpuTimes.reduce((sum, num) => sum + num),
+    //         };
+    //     }, { idle: 0, total: 0 });
+    // }
 
     /**
      * Creates a SystemInfo object based on local metrics.
@@ -66,17 +67,24 @@ export class LocalEventManager extends EventManager {
     private async createSystemInfo(options: { maxUsedCpuRatio: number }) {
         return {
             createdAt: new Date(),
-            ...this.createCpuInfo(options),
+            ...await this.createCpuInfo(options),
             ...await this.createMemoryInfo(),
         } as SystemInfo;
     }
 
-    private createCpuInfo(options: { maxUsedCpuRatio: number }) {
-        const ticks = this.getCurrentCpuTicks();
-        const idleTicksDelta = ticks.idle - this.previousTicks!.idle;
-        const totalTicksDelta = ticks.total - this.previousTicks!.total;
-        const usedCpuRatio = totalTicksDelta ? 1 - (idleTicksDelta / totalTicksDelta) : 0;
-        Object.assign(this.previousTicks, ticks);
+    private async createCpuInfo(options: { maxUsedCpuRatio: number }) {
+        // const ticks = this.getCurrentCpuTicks();
+        // const idleTicksDelta = ticks.idle - this.previousTicks!.idle;
+        // const totalTicksDelta = ticks.total - this.previousTicks!.total;
+        // const usedCpuRatio = totalTicksDelta ? 1 - (idleTicksDelta / totalTicksDelta) : 0;
+        // Object.assign(this.previousTicks, ticks);
+
+        // percent of cpu usage like 0.4
+        const usedCpuRatio = await new Promise<number>((resolve, reject) => {
+            os.cpuUsage((v) => {
+                resolve(v);
+            });
+        });
 
         return {
             cpuCurrentUsage: usedCpuRatio * 100,

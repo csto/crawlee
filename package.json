@@ -113,5 +113,8 @@
     "volta": {
         "node": "20.11.1",
         "yarn": "4.1.0"
+    },
+    "dependencies": {
+        "os-utils": "^0.0.14"
     }
 }
